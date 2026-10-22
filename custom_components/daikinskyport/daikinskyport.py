@@ -159,6 +159,14 @@ class DaikinSkyport(object):
                 thermostat_info = self.get_thermostat_info(thermostat['id'])
                 if thermostat_info == None:
                     continue
+
+                if 'mode' not in thermostat_info:
+                    # Not a thermostat. For example, a DENEB mini-split Wi-Fi adapter on the same
+                    # account reports adpt*/idu*/odu* fields and no 'mode'. Skip it so no empty
+                    # climate, weather or aux-heat entities are created for it.
+                    logger.info("Skipping non-thermostat device %s (model %s)",
+                                thermostat.get('name'), thermostat.get('model'))
+                    continue
                 
                 thermostat_info['name'] = thermostat['name']
                 thermostat_info['id'] = thermostat['id']
