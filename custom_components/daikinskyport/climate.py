@@ -572,8 +572,17 @@ class Thermostat(ClimateEntity):
         """Return current HVAC action."""
         if self.thermostat.get("_daikin_schema") == "onelite":
             # The D2271 reports eqStatus=2 while actively cooling.  Its live
-            # Y terminals are the authoritative cooling-stage indicators.
+            # Y terminals show the compressor is running, but on a heat pump Y1 is also
+            # the compressor call in Heat mode (reversing valve off, eqStatus=1, W2
+            # off), so the mode decides what it means.
             if self.thermostat.get("y1Terminal") or self.thermostat.get("y2Terminal"):
+                if self._hvac_mode == HVACMode.HEAT:
+                    return HVACAction.HEATING
+                if (
+                    self._hvac_mode == HVACMode.AUTO
+                    and self._value("equipmentStatus", "eqStatus") != 2
+                ):
+                    return HVACAction.HEATING
                 return HVACAction.COOLING
             # eqStatus=3 also shows up in Cool mode with no Y terminal on (the fan-only
             # phase between compressor runs), so it only means heating when the
